@@ -8,9 +8,11 @@ import com.netlib.mkokhttp.callback.Callback;
 import com.netlib.mkokhttp.https.HttpsUtils;
 import com.netlib.mkokhttp.log.LoggerInterceptor;
 import com.netlib.mkokhttp.utils.OkHttpUtils;
+import com.netlib.mkokhttp.utils.ReflectUtils;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -28,7 +30,7 @@ public class OkHttpManager {
     private OkHttpUtils httpUtils = OkHttpUtils.getInstance();
 
     public enum RequestType{
-        GET, POST
+        GET, POST, JSONPOST
     }
 
     private static class OkHttpManagerFactory{
@@ -82,15 +84,17 @@ public class OkHttpManager {
         return gson;
     }
 
-    public void sendRequest(String url, RequestType requestType, Object paramObj, Callback callback){
-        sendRequest(url, requestType, gson.toJson(paramObj), callback);
-    }
+//    public void sendRequest(String url, RequestType requestType, Object paramObj, Callback callback){
+//        sendRequest(url, requestType, gson.toJson(paramObj), callback);
+//    }
 
-    public void sendRequest(String url, RequestType requestType, String json, Callback callback){
+    public void sendRequest(String url, RequestType requestType, Object paramObj, Callback callback){
         if(requestType == RequestType.GET){
             executeRequest(requestGet(), url, callback);
+        }else if(requestType == RequestType.JSONPOST){
+            executeRequest(requestJsonPost(gson.toJson(paramObj)), url, callback);
         }else if(requestType == RequestType.POST){
-            executeRequest(requestPost(json), url, callback);
+            executeRequest(requestPost(ReflectUtils.getInstance().toMap(paramObj)), url, callback);
         }else{
             callback.onError(null, new UnknownHostException("requestType is error"), -1);
         }
@@ -100,8 +104,12 @@ public class OkHttpManager {
         return OkHttpUtils.get();
     }
 
-    private OkHttpRequestBuilder requestPost(String json){
+    private OkHttpRequestBuilder requestJsonPost(String json){
         return OkHttpUtils.postJsonString().content(json);
+    }
+
+    private OkHttpRequestBuilder requestPost(Map<String, String> params){
+        return OkHttpUtils.post().params(params);
     }
 
     private void executeRequest(OkHttpRequestBuilder okHttpRequest, String url, Callback callback){
