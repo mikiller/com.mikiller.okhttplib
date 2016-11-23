@@ -1,9 +1,11 @@
 package com.netlib.mkokhttp;
 
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.gson.Gson;
 import com.netlib.mkokhttp.builder.OkHttpRequestBuilder;
+import com.netlib.mkokhttp.builder.PostFormBuilder;
 import com.netlib.mkokhttp.callback.Callback;
 import com.netlib.mkokhttp.https.HttpsUtils;
 import com.netlib.mkokhttp.log.LoggerInterceptor;
@@ -88,14 +90,25 @@ public class OkHttpManager {
 //        sendRequest(url, requestType, gson.toJson(paramObj), callback);
 //    }
 
-    public void sendRequest(String url, RequestType requestType, Object paramObj, Callback callback){
+    public void sendRequest(String url, RequestType requestType, Object paramObj, Map<String, File> files, Callback callback){
         if(requestType == RequestType.GET){
             executeRequest(requestGet(), url, callback);
         }else if(requestType == RequestType.JSONPOST){
             executeRequest(requestJsonPost(gson.toJson(paramObj)), url, callback);
         }else if(requestType == RequestType.POST){
-            executeRequest(requestPost(ReflectUtils.getInstance().toMap(paramObj)), url, callback);
+            executeRequest(requestPost(ReflectUtils.getInstance().toMap(paramObj), files), url, callback);
         }else{
+            callback.onError(null, new UnknownHostException("requestType is error"), -1);
+        }
+    }
+
+    public void sendRequest(String url, RequestType requestType, Map<String, String> params, Map<String, File> files, Callback callback){
+        if(requestType == RequestType.GET) {
+            executeRequest(requestGet(), url, callback);
+        }else if(requestType == RequestType.POST){
+            executeRequest(requestPost(params, files), url, callback);
+        }
+        else{
             callback.onError(null, new UnknownHostException("requestType is error"), -1);
         }
     }
@@ -108,8 +121,11 @@ public class OkHttpManager {
         return OkHttpUtils.postJsonString().content(json);
     }
 
-    private OkHttpRequestBuilder requestPost(Map<String, String> params){
-        return OkHttpUtils.post().params(params);
+    private OkHttpRequestBuilder requestPost(Map<String, String> params, Map<String, File> files){
+        PostFormBuilder builder = OkHttpUtils.post().params(params);
+        if(files.size() > 0)
+            builder.files("avator", files);
+        return builder;
     }
 
     private void executeRequest(OkHttpRequestBuilder okHttpRequest, String url, Callback callback){

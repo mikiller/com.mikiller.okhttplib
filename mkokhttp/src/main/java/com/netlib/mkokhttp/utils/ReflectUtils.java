@@ -1,5 +1,9 @@
 package com.netlib.mkokhttp.utils;
 
+import android.util.Log;
+
+import com.google.gson.Gson;
+
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -14,8 +18,8 @@ import java.util.concurrent.CountDownLatch;
  * Created by Mikiller on 2016/9/17.
  */
 public class ReflectUtils {
-
-    private ReflectUtils(){}
+    Gson gson;
+    private ReflectUtils(){ gson = new Gson();}
 
     private static class ReflectUtilsFactory{
         private static ReflectUtils instance = new ReflectUtils();
@@ -33,8 +37,9 @@ public class ReflectUtils {
         for(Field field : fields){
             try {
                 field.setAccessible(true);
-                if(field.get(paramObj) != null)
-                    params.put(field.getName(), String.valueOf(field.get(paramObj)));
+                if(field.get(paramObj) != null) {
+                    params.put(field.getName(), (field.getType().isPrimitive() || field.getType().equals(String.class)) ? String.valueOf(field.get(paramObj)) : gson.toJson(field.get(paramObj)));
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -44,9 +49,9 @@ public class ReflectUtils {
 
     public void getAllFields(Class objClass, List<Field> fields, int exceptModifier){
         Class cls;
-       if(objClass != Object.class){
+       if(!objClass.equals(Object.class)){
             cls = objClass.getSuperclass();
-           Field[] tmp = cls.getDeclaredFields();
+           Field[] tmp = objClass.getDeclaredFields();
             for(Field field : tmp){
                 if(exceptModifier != -1 && field.getModifiers() == exceptModifier){
                     continue;

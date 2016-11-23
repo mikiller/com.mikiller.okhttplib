@@ -88,7 +88,10 @@ public class RequestCall
                 @Override
                 public void onFailure(Call call, final IOException e)
                 {
-                    OkHttpUtils.getInstance().sendFailResultCallback(call, e, finalCallback, id);
+                    OkHttpUtils.getInstance().sendFailResultCallback(call,
+                            new IOException("网络无连接"),
+                            finalCallback,
+                            id);
                 }
 
                 @Override
